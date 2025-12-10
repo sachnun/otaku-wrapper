@@ -1,5 +1,5 @@
 {
-  "name": "otaku-wraper",
+  "name": "otaku-wrapper",
   "description": "Monorepo for anime, manga & novel scraper APIs",
   "keywords": ["api", "scraper", "anime", "manga", "novel", "otakudesu", "softkomik", "cloudflare-workers"],
   "private": true,

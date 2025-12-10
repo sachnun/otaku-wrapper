@@ -20,7 +20,7 @@ importers:
       '@hono/zod-openapi':
         specifier: ^1.1.5
         version: 1.1.5(hono@4.10.8)(zod@4.1.13)
-      '@otaku-wraper/core':
+      '@otaku-wrapper/core':
         specifier: workspace:*
         version: link:../../../packages/core
       hono:
@@ -42,7 +42,7 @@ importers:
       '@hono/swagger-ui':
         specifier: ^0.5.2
         version: 0.5.2(hono@4.10.8)
-      '@otaku-wraper/core':
+      '@otaku-wrapper/core':
         specifier: workspace:*
         version: link:../../../packages/core
       hono:
@@ -64,7 +64,7 @@ importers:
       '@hono/swagger-ui':
         specifier: ^0.5.2
         version: 0.5.2(hono@4.10.8)
-      '@otaku-wraper/core':
+      '@otaku-wrapper/core':
         specifier: workspace:*
         version: link:../../../packages/core
       hono:
