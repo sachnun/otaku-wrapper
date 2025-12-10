@@ -2,19 +2,9 @@ export const openApiSpec = {
   openapi: "3.0.3",
   info: {
     title: "Otakudesu API",
-    description: "REST API for scraping anime data from Otakudesu.",
-    version: "1.0.0",
-    license: {
-      name: "MIT",
-      url: "https://opensource.org/licenses/MIT",
-    },
+    description:
+      'Unofficial API for accessing anime content from <a href="https://otakudesu.cloud">otakudesu.cloud</a>',
   },
-  servers: [
-    {
-      url: "/",
-      description: "Current server",
-    },
-  ],
   tags: [
     {
       name: "Home",

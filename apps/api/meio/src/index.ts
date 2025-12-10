@@ -346,7 +346,6 @@ app.doc('/openapi.json', {
 	openapi: '3.0.0',
 	info: {
 		title: 'Meio Novels API',
-		version: '',
 		description: 'Unofficial API for accessing novel content from <a href="https://meionovels.com">meionovels.com</a>'
 	},
 	tags: [

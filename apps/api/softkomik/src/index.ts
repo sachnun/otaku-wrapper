@@ -36,15 +36,8 @@ const openApiSpec = {
   openapi: '3.0.0',
   info: {
     title: 'Softkomik API',
-    version: '1.0.0',
-    description: 'REST API for scraping comic data from softkomik.com. Built with Hono and runs on Cloudflare Workers.',
-    contact: {
-      name: 'Softkomik API'
-    }
+    description: 'Unofficial API for accessing comic content from <a href="https://softkomik.com">softkomik.com</a>'
   },
-  servers: [
-    { url: '/', description: 'Current server' }
-  ],
   tags: [
     { name: 'Home', description: 'Homepage data endpoints' },
     { name: 'Comics', description: 'Comic list, detail, and chapter endpoints' },
