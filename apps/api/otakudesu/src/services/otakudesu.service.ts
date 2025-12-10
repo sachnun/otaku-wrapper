@@ -1,4 +1,4 @@
-import * as cheerio from 'cheerio';
+import { fetchHtml, cheerio, DEFAULT_HEADERS } from '@otaku-wraper/core';
 import type {
   HomeResponse,
   AnimeCard,
@@ -19,26 +19,6 @@ import type {
 
 export class OtakudesuService {
   private readonly baseUrl = 'https://otakudesu.best';
-  private readonly headers = {
-    'User-Agent':
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    Accept:
-      'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.5',
-  };
-
-  private async fetchHtml(url: string): Promise<cheerio.CheerioAPI> {
-    const response = await fetch(url, {
-      headers: this.headers,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch data from ${url}`);
-    }
-
-    const html = await response.text();
-    return cheerio.load(html);
-  }
 
   private extractSlug(url: string): string {
     const matches = url.match(/\/(?:anime|episode)\/([^/]+)\/?/);
@@ -80,7 +60,7 @@ export class OtakudesuService {
   }
 
   async getHome(): Promise<HomeResponse> {
-    const $ = await this.fetchHtml(this.baseUrl);
+    const $ = await fetchHtml(this.baseUrl);
 
     const ongoing: AnimeCard[] = [];
     const complete: AnimeCard[] = [];
@@ -143,7 +123,7 @@ export class OtakudesuService {
       page === 1
         ? `${this.baseUrl}/ongoing-anime/`
         : `${this.baseUrl}/ongoing-anime/page/${page}/`;
-    const $ = await this.fetchHtml(url);
+    const $ = await fetchHtml(url);
 
     const anime: AnimeCard[] = [];
 
@@ -181,7 +161,7 @@ export class OtakudesuService {
       page === 1
         ? `${this.baseUrl}/complete-anime/`
         : `${this.baseUrl}/complete-anime/page/${page}/`;
-    const $ = await this.fetchHtml(url);
+    const $ = await fetchHtml(url);
 
     const anime: AnimeCard[] = [];
 
@@ -215,7 +195,7 @@ export class OtakudesuService {
   }
 
   async getAnimeList(): Promise<Record<string, AnimeListItem[]>> {
-    const $ = await this.fetchHtml(`${this.baseUrl}/anime-list/`);
+    const $ = await fetchHtml(`${this.baseUrl}/anime-list/`);
 
     const list: Record<string, AnimeListItem[]> = {};
 
@@ -246,7 +226,7 @@ export class OtakudesuService {
   }
 
   async getAnimeDetail(slug: string): Promise<AnimeDetail> {
-    const $ = await this.fetchHtml(`${this.baseUrl}/anime/${slug}/`);
+    const $ = await fetchHtml(`${this.baseUrl}/anime/${slug}/`);
 
     const title = $('.jdlrx h1')
       .text()
@@ -321,7 +301,7 @@ export class OtakudesuService {
   }
 
   async getEpisodeDetail(slug: string): Promise<EpisodeDetail> {
-    const $ = await this.fetchHtml(`${this.baseUrl}/episode/${slug}/`);
+    const $ = await fetchHtml(`${this.baseUrl}/episode/${slug}/`);
 
     const title = $('.posttl').text().trim();
 
@@ -424,7 +404,7 @@ export class OtakudesuService {
   }
 
   async getGenres(): Promise<Genre[]> {
-    const $ = await this.fetchHtml(`${this.baseUrl}/genre-list/`);
+    const $ = await fetchHtml(`${this.baseUrl}/genre-list/`);
 
     const genres: Genre[] = [];
 
@@ -452,7 +432,7 @@ export class OtakudesuService {
       page === 1
         ? `${this.baseUrl}/genres/${genre}/`
         : `${this.baseUrl}/genres/${genre}/page/${page}/`;
-    const $ = await this.fetchHtml(url);
+    const $ = await fetchHtml(url);
 
     const anime: AnimeCard[] = [];
 
@@ -490,7 +470,7 @@ export class OtakudesuService {
   }
 
   async getSchedule(): Promise<ScheduleDay[]> {
-    const $ = await this.fetchHtml(`${this.baseUrl}/jadwal-rilis/`);
+    const $ = await fetchHtml(`${this.baseUrl}/jadwal-rilis/`);
 
     const schedule: ScheduleDay[] = [];
     const days = [
@@ -534,7 +514,7 @@ export class OtakudesuService {
   }
 
   async search(query: string): Promise<AnimeCard[]> {
-    const $ = await this.fetchHtml(
+    const $ = await fetchHtml(
       `${this.baseUrl}/?s=${encodeURIComponent(query)}&post_type=anime`,
     );
 
@@ -590,7 +570,7 @@ export class OtakudesuService {
       {
         method: 'POST',
         headers: {
-          ...this.headers,
+          ...DEFAULT_HEADERS,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
@@ -612,13 +592,12 @@ export class OtakudesuService {
       throw error;
     }
 
-    // Request the player URL
     const playerResponse = await fetch(
       `${this.baseUrl}/wp-admin/admin-ajax.php`,
       {
         method: 'POST',
         headers: {
-          ...this.headers,
+          ...DEFAULT_HEADERS,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({

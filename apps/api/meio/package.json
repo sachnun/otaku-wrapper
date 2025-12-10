@@ -10,8 +10,8 @@
   "dependencies": {
     "@hono/swagger-ui": "^0.5.2",
     "@hono/zod-openapi": "^1.1.5",
+    "@otaku-wraper/core": "workspace:*",
     "hono": "^4.10.7",
-    "node-html-parser": "^7.0.1",
     "zod": "^4.0.0"
   },
   "devDependencies": {

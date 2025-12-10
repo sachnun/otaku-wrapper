@@ -1,34 +1,18 @@
+import { fetchText, fetchJson, DEFAULT_HEADERS } from '@otaku-wraper/core'
 import { BASE_URL, V2_API_URL } from './constants'
 
 export const request = async (path: string): Promise<string> => {
   const url = path.startsWith('http') ? path : `${BASE_URL}${path}`
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-      'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
-      'Referer': BASE_URL,
-    }
-  })
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${url}: ${response.status}`)
-  }
-
-  return response.text()
+  return fetchText(url, { referer: BASE_URL })
 }
 
 export const requestV2 = async <T>(path: string): Promise<T | null> => {
   const url = `${V2_API_URL}${path}`
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'application/json',
-      'Referer': BASE_URL,
-    }
-  })
-
-  if (!response.ok) return null
-
-  return response.json() as Promise<T>
+  try {
+    return await fetchJson<T>(url, { referer: BASE_URL })
+  } catch {
+    return null
+  }
 }
+
+export { DEFAULT_HEADERS }

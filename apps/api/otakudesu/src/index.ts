@@ -2,17 +2,15 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { swaggerUI } from "@hono/swagger-ui";
+import { successResponse, type ApiErrorResponse } from "@otaku-wraper/core";
 import { otakudesuService } from "./services/otakudesu.service";
-import type { ApiResponse, ApiErrorResponse } from "./types";
 import { openApiSpec } from "./openapi";
 
 const app = new Hono();
 
-// Middleware
 app.use("*", cors());
 app.use("*", logger());
 
-// Error handler
 app.onError((err, c) => {
   const statusCode = (err as any).statusCode || 500;
   const path = c.req.path;
@@ -50,32 +48,12 @@ app.onError((err, c) => {
   return c.json(errorResponse, statusCode);
 });
 
-// Helper function to create success response
-function successResponse<T>(c: any, data: T, startTime: number): Response {
-  const responseTime = `${Date.now() - startTime}ms`;
-  const response: ApiResponse<T> = {
-    success: true,
-    statusCode: 200,
-    message: "OK",
-    data,
-    timestamp: new Date().toISOString(),
-    path: c.req.path,
-    responseTime,
-  };
-
-  c.header("X-Response-Time", responseTime);
-  return c.json(response);
-}
-
-// OpenAPI JSON
 app.get("/openapi.json", (c) => {
   return c.json(openApiSpec);
 });
 
-// Swagger UI
 app.get("/docs", swaggerUI({ url: "/openapi.json" }));
 
-// Root redirect to docs
 app.get("/", (c) => {
   return c.redirect("/docs");
 });
