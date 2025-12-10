@@ -1,4 +1,4 @@
-import { fetchText, fetchJson, DEFAULT_HEADERS } from '@otaku-wraper/core'
+import { fetchText, fetchJson, DEFAULT_HEADERS } from '@otaku-wrapper/core'
 import { BASE_URL, V2_API_URL } from './constants'
 
 export const request = async (path: string): Promise<string> => {

@@ -1,4 +1,4 @@
-import { fetchHtml, cheerio, DEFAULT_HEADERS } from '@otaku-wraper/core';
+import { fetchHtml, cheerio, DEFAULT_HEADERS } from '@otaku-wrapper/core';
 import type {
   HomeResponse,
   AnimeCard,

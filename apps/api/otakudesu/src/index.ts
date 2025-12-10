@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { swaggerUI } from "@hono/swagger-ui";
-import { successResponse, type ApiErrorResponse } from "@otaku-wraper/core";
+import { successResponse, type ApiErrorResponse } from "@otaku-wrapper/core";
 import { otakudesuService } from "./services/otakudesu.service";
 import { openApiSpec } from "./openapi";
 

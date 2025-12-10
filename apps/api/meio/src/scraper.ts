@@ -1,4 +1,4 @@
-import { fetchHtml, fetchText, getCache, setCache, CACHE_TTL, cheerio } from '@otaku-wraper/core'
+import { fetchHtml, fetchText, getCache, setCache, CACHE_TTL, cheerio } from '@otaku-wrapper/core'
 
 const BASE_URL = 'https://meionovels.com'
 
