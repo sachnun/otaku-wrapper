@@ -1,40 +1,23 @@
 # Softkomik API
 
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/sachnun/softkomik-api)
-
-REST API for scraping comic data from softkomik.com. Built with Hono on Cloudflare Workers.
-
-## Requirements
-
-- Node.js 18+
-- Cloudflare account
+Web scraper API for [softkomik.com](https://softkomik.com).
 
 ## Development
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
-Server runs at http://localhost:8787
+## Deploy
 
-## Deploy to Cloudflare Workers
+```bash
+pnpm deploy
+```
 
-1. Login to Cloudflare:
-   ```bash
-   npx wrangler login
-   ```
+## Docs
 
-2. Deploy:
-   ```bash
-   npm run deploy
-   ```
-
-3. Worker will be live at: `https://softkomik-api.<username>.workers.dev`
-
-## API Documentation
-
-Interactive API docs available at `/docs` (Swagger UI).
+API documentation available at `/docs`.
 
 ## License
 
