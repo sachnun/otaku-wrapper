@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kusonime-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-12-06",
+  "compatibility_flags": ["nodejs_compat"],
+  "dev": {
+    "port": 8789,
+    "inspector_port": 9331
+  }
+}
