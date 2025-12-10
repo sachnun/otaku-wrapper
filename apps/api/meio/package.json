@@ -1,5 +1,5 @@
 {
-  "name": "meio-api",
+  "name": "@api/meio",
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
