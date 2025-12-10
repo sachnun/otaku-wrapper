@@ -1,44 +1,20 @@
-import { parse, HTMLElement } from 'node-html-parser'
+import { fetchHtml, fetchText, getCache, setCache, CACHE_TTL, cheerio } from '@otaku-wraper/core'
 
 const BASE_URL = 'https://meionovels.com'
 
-// In-memory cache
-interface CacheEntry<T> {
-	data: T
-	expiry: number
-}
-
-const cache = new Map<string, CacheEntry<any>>()
-
-// Cache TTL in milliseconds
-const CACHE_TTL = {
-	novelList: 5 * 60 * 1000,      // 5 minutes
-	novelDetail: 30 * 60 * 1000,   // 30 minutes
-	chapterList: 10 * 60 * 1000,   // 10 minutes
-	chapterContent: 60 * 60 * 1000, // 1 hour
-	search: 5 * 60 * 1000,         // 5 minutes
-	latest: 2 * 60 * 1000,         // 2 minutes
-	genres: 60 * 60 * 1000         // 1 hour
-}
-
-function getCache<T>(key: string): T | null {
-	const entry = cache.get(key)
-	if (!entry) return null
-	if (Date.now() > entry.expiry) {
-		cache.delete(key)
-		return null
-	}
-	return entry.data as T
-}
-
-function setCache<T>(key: string, data: T, ttl: number): void {
-	cache.set(key, { data, expiry: Date.now() + ttl })
+const TTL = {
+	novelList: CACHE_TTL.SHORT,
+	novelDetail: CACHE_TTL.MEDIUM,
+	chapterList: CACHE_TTL.MEDIUM,
+	chapterContent: CACHE_TTL.LONG,
+	search: CACHE_TTL.SHORT,
+	latest: 2 * 60 * 1000,
+	genres: CACHE_TTL.LONG
 }
 
 function cleanDescription(description: string): string {
 	if (!description) return description
 	
-	// Remove "Show more" text and similar UI elements
 	let cleaned = description
 		.replace(/\s*Show more\s*$/i, '')
 		.replace(/\s*Show less\s*$/i, '')
@@ -46,13 +22,12 @@ function cleanDescription(description: string): string {
 		.replace(/\s*Read less\s*$/i, '')
 		.replace(/\s*\.\.\.\s*$/i, '')
 	
-	// Clean up excessive whitespace and newlines
 	cleaned = cleaned
-		.replace(/\n\s*\n\s*\n+/g, '\n\n')  // Multiple consecutive newlines to double newline
-		.replace(/[ \t]+/g, ' ')            // Multiple spaces/tabs to single space
-		.replace(/^\s+|\s+$/g, '')          // Trim start and end
-		.replace(/\n[ \t]+/g, '\n')         // Spaces after newlines
-		.replace(/[ \t]+\n/g, '\n')         // Spaces before newlines
+		.replace(/\n\s*\n\s*\n+/g, '\n\n')
+		.replace(/[ \t]+/g, ' ')
+		.replace(/^\s+|\s+$/g, '')
+		.replace(/\n[ \t]+/g, '\n')
+		.replace(/[ \t]+\n/g, '\n')
 	
 	return cleaned
 }
@@ -94,14 +69,9 @@ export interface ChapterContent {
 	nextChapter?: string
 }
 
-async function fetchHtml(url: string): Promise<HTMLElement> {
-	const res = await fetch(url, {
-		headers: {
-			'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-		}
-	})
-	const html = await res.text()
-	return parse(html)
+export interface Genre {
+	slug: string
+	name: string
 }
 
 export async function getNovelList(page = 1): Promise<{ novels: Novel[]; hasNext: boolean }> {
@@ -110,35 +80,34 @@ export async function getNovelList(page = 1): Promise<{ novels: Novel[]; hasNext
 	if (cached) return cached
 
 	const url = page > 1 ? `${BASE_URL}/novel/page/${page}/` : `${BASE_URL}/novel/`
-	const doc = await fetchHtml(url)
+	const $ = await fetchHtml(url)
 
 	const novels: Novel[] = []
-	const items = doc.querySelectorAll('.page-item-detail')
+	$('.page-item-detail').each((_, el) => {
+		const $el = $(el)
+		const titleEl = $el.find('.post-title a')
+		const imgEl = $el.find('.item-thumb img')
+		const chapterEl = $el.find('.chapter a')
 
-	for (const item of items) {
-		const titleEl = item.querySelector('.post-title a')
-		const imgEl = item.querySelector('.item-thumb img')
-		const chapterEl = item.querySelector('.chapter a')
-
-		if (titleEl) {
-			const href = titleEl.getAttribute('href') || ''
+		if (titleEl.length) {
+			const href = titleEl.attr('href') || ''
 			const slug = href.replace(`${BASE_URL}/novel/`, '').replace(/\/$/, '')
 
 			novels.push({
 				slug,
-				title: titleEl.text.trim(),
-				cover: imgEl?.getAttribute('data-src') || imgEl?.getAttribute('src') || '',
-				latestChapter: chapterEl?.text.trim(),
-				latestChapterUrl: chapterEl?.getAttribute('href')
+				title: titleEl.text().trim(),
+				cover: imgEl.attr('data-src') || imgEl.attr('src') || '',
+				latestChapter: chapterEl.text().trim() || undefined,
+				latestChapterUrl: chapterEl.attr('href') || undefined
 			})
 		}
-	}
+	})
 
-	const nextPage = doc.querySelector('.nav-previous a')
-	const hasNext = !!nextPage
+	const nextPage = $('.nav-previous a')
+	const hasNext = nextPage.length > 0
 
 	const result = { novels, hasNext }
-	setCache(cacheKey, result, CACHE_TTL.novelList)
+	setCache(cacheKey, result, TTL.novelList)
 	return result
 }
 
@@ -148,58 +117,54 @@ export async function getNovelDetail(slug: string): Promise<NovelDetail | null> 
 	if (cached) return cached
 
 	const url = `${BASE_URL}/novel/${slug}/`
-	const doc = await fetchHtml(url)
+	const $ = await fetchHtml(url)
 
-	const titleEl = doc.querySelector('.post-title h1')
-	if (!titleEl) return null
+	const titleEl = $('.post-title h1')
+	if (!titleEl.length) return null
 
-	const imgEl = doc.querySelector('.summary_image img')
-	const descEl = doc.querySelector('.summary__content, .description-summary')
-	const authorEl = doc.querySelector('.author-content a')
-	const artistEl = doc.querySelector('.artist-content a')
-	const statusEl = doc.querySelector('.post-status .summary-content')
-	const typeEl = doc.querySelector('.post-content_item:contains("Type") .summary-content')
-	const ratingEl = doc.querySelector('.post-total-rating .score')
+	const imgEl = $('.summary_image img')
+	const descEl = $('.summary__content, .description-summary')
+	const authorEl = $('.author-content a')
+	const artistEl = $('.artist-content a')
+	const ratingEl = $('.post-total-rating .score')
 
 	const genres: string[] = []
-	doc.querySelectorAll('.genres-content a').forEach((el) => {
-		genres.push(el.text.trim())
+	$('.genres-content a').each((_, el) => {
+		genres.push($(el).text().trim())
 	})
 
-	// Get status from post-status section
 	let status = ''
-	const statusItems = doc.querySelectorAll('.post-status .post-content_item')
-	for (const item of statusItems) {
-		const heading = item.querySelector('.summary-heading')?.text.trim().toLowerCase()
-		if (heading?.includes('status')) {
-			status = item.querySelector('.summary-content')?.text.trim() || ''
+	$('.post-status .post-content_item').each((_, el) => {
+		const $el = $(el)
+		const heading = $el.find('.summary-heading').text().trim().toLowerCase()
+		if (heading.includes('status')) {
+			status = $el.find('.summary-content').text().trim()
 		}
-	}
+	})
 
-	// Get type
 	let type = ''
-	const contentItems = doc.querySelectorAll('.post-content_item')
-	for (const item of contentItems) {
-		const heading = item.querySelector('.summary-heading')?.text.trim().toLowerCase()
-		if (heading?.includes('type')) {
-			type = item.querySelector('.summary-content')?.text.trim() || ''
+	$('.post-content_item').each((_, el) => {
+		const $el = $(el)
+		const heading = $el.find('.summary-heading').text().trim().toLowerCase()
+		if (heading.includes('type')) {
+			type = $el.find('.summary-content').text().trim()
 		}
-	}
+	})
 
-	const result = {
+	const result: NovelDetail = {
 		slug,
-		title: titleEl.text.trim(),
-		cover: imgEl?.getAttribute('data-src') || imgEl?.getAttribute('src') || '',
-		description: cleanDescription(descEl?.text.trim() || ''),
-		author: authorEl?.text.trim() || '',
-		artist: artistEl?.text.trim() || '',
+		title: titleEl.text().trim(),
+		cover: imgEl.attr('data-src') || imgEl.attr('src') || '',
+		description: cleanDescription(descEl.text().trim()),
+		author: authorEl.text().trim(),
+		artist: artistEl.text().trim(),
 		genres,
 		status,
 		type,
-		rating: ratingEl?.text.trim() || ''
+		rating: ratingEl.text().trim()
 	}
 
-	setCache(cacheKey, result, CACHE_TTL.novelDetail)
+	setCache(cacheKey, result, TTL.novelDetail)
 	return result
 }
 
@@ -208,38 +173,30 @@ export async function getChapterList(slug: string): Promise<Chapter[]> {
 	const cached = getCache<Chapter[]>(cacheKey)
 	if (cached) return cached
 
-	// Chapters are loaded via AJAX POST request
 	const url = `${BASE_URL}/novel/${slug}/ajax/chapters/`
-	const res = await fetch(url, {
-		method: 'POST',
-		headers: {
-			'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-		}
-	})
-	const html = await res.text()
-	const doc = parse(html)
+	const html = await fetchText(url, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } })
+	const $ = cheerio.load(html)
 
 	const chapters: Chapter[] = []
-	const items = doc.querySelectorAll('.wp-manga-chapter')
+	$('.wp-manga-chapter').each((_, el) => {
+		const $el = $(el)
+		const linkEl = $el.find('a')
+		const dateEl = $el.find('.chapter-release-date')
 
-	for (const item of items) {
-		const linkEl = item.querySelector('a')
-		const dateEl = item.querySelector('.chapter-release-date')
-
-		if (linkEl) {
-			const href = linkEl.getAttribute('href') || ''
+		if (linkEl.length) {
+			const href = linkEl.attr('href') || ''
 			const chapterSlug = href.replace(`${BASE_URL}/novel/${slug}/`, '').replace(/\/$/, '')
 
 			chapters.push({
 				slug: chapterSlug,
-				title: linkEl.text.trim(),
+				title: linkEl.text().trim(),
 				url: href,
-				date: dateEl?.text.trim()
+				date: dateEl.text().trim() || undefined
 			})
 		}
-	}
+	})
 
-	setCache(cacheKey, chapters, CACHE_TTL.chapterList)
+	setCache(cacheKey, chapters, TTL.chapterList)
 	return chapters
 }
 
@@ -252,63 +209,59 @@ export async function getChapterContent(
 	if (cached) return cached
 
 	const url = `${BASE_URL}/novel/${novelSlug}/${chapterSlug}/`
-	const doc = await fetchHtml(url)
+	const $ = await fetchHtml(url)
 
-	const titleEl = doc.querySelector('.breadcrumb li.active')
-	const novelTitleEl = doc.querySelector('.breadcrumb li:nth-child(3) a')
-	const contentEl = doc.querySelector('.reading-content .text-left, .reading-content')
+	const titleEl = $('.breadcrumb li.active')
+	const novelTitleEl = $('.breadcrumb li:nth-child(3) a')
+	const contentEl = $('.reading-content .text-left, .reading-content')
 
-	if (!contentEl) return null
+	if (!contentEl.length) return null
 
-	// Clean content - remove scripts and ads
-	contentEl.querySelectorAll('script, .ads, .adsbygoogle, ins, style, noscript').forEach((el) => el.remove())
+	contentEl.find('script, .ads, .adsbygoogle, ins, style, noscript').remove()
 
-	// Extract clean text while preserving paragraph structure
 	const paragraphs: string[] = []
-	const pElements = contentEl.querySelectorAll('p')
+	const pElements = contentEl.find('p')
 
 	if (pElements.length > 0) {
-		for (const p of pElements) {
-			const text = p.text.trim()
+		pElements.each((_, el) => {
+			const text = $(el).text().trim()
 			if (text) {
 				paragraphs.push(text)
 			}
-		}
+		})
 	} else {
-		// Fallback: split by br or just get text
-		const text = contentEl.text.trim()
+		const text = contentEl.text().trim()
 		paragraphs.push(...text.split(/\n+/).filter((p) => p.trim()))
 	}
 
 	const cleanContent = paragraphs.join('\n\n')
 
-	// Get navigation
-	const prevEl = doc.querySelector('.prev_page, .nav-previous a')
-	const nextEl = doc.querySelector('.next_page, .nav-next a')
+	const prevEl = $('.prev_page, .nav-previous a')
+	const nextEl = $('.next_page, .nav-next a')
 
 	let prevChapter: string | undefined
 	let nextChapter: string | undefined
 
-	if (prevEl) {
-		const prevHref = prevEl.getAttribute('href') || ''
-		prevChapter = prevHref.replace(`${BASE_URL}/novel/${novelSlug}/`, '').replace(/\/$/, '')
+	if (prevEl.length) {
+		const prevHref = prevEl.attr('href') || ''
+		prevChapter = prevHref.replace(`${BASE_URL}/novel/${novelSlug}/`, '').replace(/\/$/, '') || undefined
 	}
 
-	if (nextEl) {
-		const nextHref = nextEl.getAttribute('href') || ''
-		nextChapter = nextHref.replace(`${BASE_URL}/novel/${novelSlug}/`, '').replace(/\/$/, '')
+	if (nextEl.length) {
+		const nextHref = nextEl.attr('href') || ''
+		nextChapter = nextHref.replace(`${BASE_URL}/novel/${novelSlug}/`, '').replace(/\/$/, '') || undefined
 	}
 
-	const result = {
-		title: titleEl?.text.trim() || chapterSlug,
-		novelTitle: novelTitleEl?.text.trim() || '',
+	const result: ChapterContent = {
+		title: titleEl.text().trim() || chapterSlug,
+		novelTitle: novelTitleEl.text().trim(),
 		novelSlug,
 		content: cleanContent,
 		prevChapter,
 		nextChapter
 	}
 
-	setCache(cacheKey, result, CACHE_TTL.chapterContent)
+	setCache(cacheKey, result, TTL.chapterContent)
 	return result
 }
 
@@ -318,28 +271,27 @@ export async function searchNovels(query: string): Promise<Novel[]> {
 	if (cached) return cached
 
 	const url = `${BASE_URL}/?s=${encodeURIComponent(query)}&post_type=wp-manga`
-	const doc = await fetchHtml(url)
+	const $ = await fetchHtml(url)
 
 	const novels: Novel[] = []
-	const items = doc.querySelectorAll('.c-tabs-item__content, .row.c-tabs-item')
+	$('.c-tabs-item__content, .row.c-tabs-item').each((_, el) => {
+		const $el = $(el)
+		const titleEl = $el.find('.post-title a, h3 a')
+		const imgEl = $el.find('.tab-thumb img, img')
 
-	for (const item of items) {
-		const titleEl = item.querySelector('.post-title a, h3 a')
-		const imgEl = item.querySelector('.tab-thumb img, img')
-
-		if (titleEl) {
-			const href = titleEl.getAttribute('href') || ''
+		if (titleEl.length) {
+			const href = titleEl.attr('href') || ''
 			const slug = href.replace(`${BASE_URL}/novel/`, '').replace(/\/$/, '')
 
 			novels.push({
 				slug,
-				title: titleEl.text.trim(),
-				cover: imgEl?.getAttribute('data-src') || imgEl?.getAttribute('src') || ''
+				title: titleEl.text().trim(),
+				cover: imgEl.attr('data-src') || imgEl.attr('src') || ''
 			})
 		}
-	}
+	})
 
-	setCache(cacheKey, novels, CACHE_TTL.search)
+	setCache(cacheKey, novels, TTL.search)
 	return novels
 }
 
@@ -348,37 +300,31 @@ export async function getLatestUpdates(): Promise<Novel[]> {
 	const cached = getCache<Novel[]>(cacheKey)
 	if (cached) return cached
 
-	const doc = await fetchHtml(BASE_URL)
+	const $ = await fetchHtml(BASE_URL)
 
 	const novels: Novel[] = []
-	const items = doc.querySelectorAll('.page-item-detail')
+	$('.page-item-detail').each((_, el) => {
+		const $el = $(el)
+		const titleEl = $el.find('.post-title a')
+		const imgEl = $el.find('.item-thumb img')
+		const chapterEl = $el.find('.chapter a')
 
-	for (const item of items) {
-		const titleEl = item.querySelector('.post-title a')
-		const imgEl = item.querySelector('.item-thumb img')
-		const chapterEl = item.querySelector('.chapter a')
-
-		if (titleEl) {
-			const href = titleEl.getAttribute('href') || ''
+		if (titleEl.length) {
+			const href = titleEl.attr('href') || ''
 			const slug = href.replace(`${BASE_URL}/novel/`, '').replace(/\/$/, '')
 
 			novels.push({
 				slug,
-				title: titleEl.text.trim(),
-				cover: imgEl?.getAttribute('data-src') || imgEl?.getAttribute('src') || '',
-				latestChapter: chapterEl?.text.trim(),
-				latestChapterUrl: chapterEl?.getAttribute('href')
+				title: titleEl.text().trim(),
+				cover: imgEl.attr('data-src') || imgEl.attr('src') || '',
+				latestChapter: chapterEl.text().trim() || undefined,
+				latestChapterUrl: chapterEl.attr('href') || undefined
 			})
 		}
-	}
+	})
 
-	setCache(cacheKey, novels, CACHE_TTL.latest)
+	setCache(cacheKey, novels, TTL.latest)
 	return novels
-}
-
-export interface Genre {
-	slug: string
-	name: string
 }
 
 export async function getGenres(): Promise<Genre[]> {
@@ -387,24 +333,22 @@ export async function getGenres(): Promise<Genre[]> {
 	if (cached) return cached
 
 	const url = `${BASE_URL}/novel/`
-	const doc = await fetchHtml(url)
+	const $ = await fetchHtml(url)
 
 	const genres: Genre[] = []
-	const links = doc.querySelectorAll('.genres a[href*="novel-genre"]')
-
-	for (const link of links) {
-		const href = link.getAttribute('href') || ''
+	$('.genres a[href*="novel-genre"]').each((_, el) => {
+		const $el = $(el)
+		const href = $el.attr('href') || ''
 		const slug = href.replace(`${BASE_URL}/novel-genre/`, '').replace(/\/$/, '')
-		// Clean name - remove count and extra whitespace
-		const rawName = link.text.trim()
+		const rawName = $el.text().trim()
 		const name = rawName.replace(/\s*\(\d+\)\s*$/, '').replace(/\s+/g, ' ').trim()
 
 		if (slug && name) {
 			genres.push({ slug, name })
 		}
-	}
+	})
 
-	setCache(cacheKey, genres, CACHE_TTL.genres)
+	setCache(cacheKey, genres, TTL.genres)
 	return genres
 }
 
@@ -416,34 +360,33 @@ export async function getNovelsByGenre(genre: string, page = 1): Promise<{ novel
 	const url = page > 1
 		? `${BASE_URL}/novel-genre/${genre}/page/${page}/`
 		: `${BASE_URL}/novel-genre/${genre}/`
-	const doc = await fetchHtml(url)
+	const $ = await fetchHtml(url)
 
 	const novels: Novel[] = []
-	const items = doc.querySelectorAll('.page-item-detail')
+	$('.page-item-detail').each((_, el) => {
+		const $el = $(el)
+		const titleEl = $el.find('.post-title a')
+		const imgEl = $el.find('.item-thumb img')
+		const chapterEl = $el.find('.chapter a')
 
-	for (const item of items) {
-		const titleEl = item.querySelector('.post-title a')
-		const imgEl = item.querySelector('.item-thumb img')
-		const chapterEl = item.querySelector('.chapter a')
-
-		if (titleEl) {
-			const href = titleEl.getAttribute('href') || ''
+		if (titleEl.length) {
+			const href = titleEl.attr('href') || ''
 			const slug = href.replace(`${BASE_URL}/novel/`, '').replace(/\/$/, '')
 
 			novels.push({
 				slug,
-				title: titleEl.text.trim(),
-				cover: imgEl?.getAttribute('data-src') || imgEl?.getAttribute('src') || '',
-				latestChapter: chapterEl?.text.trim(),
-				latestChapterUrl: chapterEl?.getAttribute('href')
+				title: titleEl.text().trim(),
+				cover: imgEl.attr('data-src') || imgEl.attr('src') || '',
+				latestChapter: chapterEl.text().trim() || undefined,
+				latestChapterUrl: chapterEl.attr('href') || undefined
 			})
 		}
-	}
+	})
 
-	const nextPage = doc.querySelector('.nav-previous a')
-	const hasNext = !!nextPage
+	const nextPage = $('.nav-previous a')
+	const hasNext = nextPage.length > 0
 
 	const result = { novels, hasNext }
-	setCache(cacheKey, result, CACHE_TTL.novelList)
+	setCache(cacheKey, result, TTL.novelList)
 	return result
 }
