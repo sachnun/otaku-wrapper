@@ -2,9 +2,9 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { swaggerUI } from "@hono/swagger-ui";
-import { successResponse, type ApiErrorResponse } from "@otaku-wrapper/core";
-import { otakudesuService } from "./services/otakudesu.service";
+import { type ApiErrorResponse } from "@otaku-wrapper/core";
 import { openApiSpec } from "./openapi";
+import { otakudesuRoutes } from "./routes";
 
 const app = new Hono();
 
@@ -58,107 +58,7 @@ app.get("/", (c) => {
   return c.redirect("/docs");
 });
 
-// API Routes
-
-// Home
-app.get("/api/home", async (c) => {
-  const startTime = Date.now();
-  const data = await otakudesuService.getHome();
-  return successResponse(c, data, startTime);
-});
-
-// Ongoing anime
-app.get("/api/ongoing", async (c) => {
-  const startTime = Date.now();
-  const page = parseInt(c.req.query("page") || "1");
-  const data = await otakudesuService.getOngoing(page);
-  return successResponse(c, data, startTime);
-});
-
-// Complete anime
-app.get("/api/complete", async (c) => {
-  const startTime = Date.now();
-  const page = parseInt(c.req.query("page") || "1");
-  const data = await otakudesuService.getComplete(page);
-  return successResponse(c, data, startTime);
-});
-
-// Anime list
-app.get("/api/anime-list", async (c) => {
-  const startTime = Date.now();
-  const list = await otakudesuService.getAnimeList();
-  return successResponse(c, { list }, startTime);
-});
-
-// Anime detail
-app.get("/api/anime/:slug", async (c) => {
-  const startTime = Date.now();
-  const slug = c.req.param("slug");
-  const data = await otakudesuService.getAnimeDetail(slug);
-  return successResponse(c, data, startTime);
-});
-
-// Episode detail
-app.get("/api/episode/:slug", async (c) => {
-  const startTime = Date.now();
-  const slug = c.req.param("slug");
-  const data = await otakudesuService.getEpisodeDetail(slug);
-  return successResponse(c, data, startTime);
-});
-
-// Genres list
-app.get("/api/genres", async (c) => {
-  const startTime = Date.now();
-  const genres = await otakudesuService.getGenres();
-  return successResponse(c, { genres }, startTime);
-});
-
-// Anime by genre
-app.get("/api/genres/:genre", async (c) => {
-  const startTime = Date.now();
-  const genre = c.req.param("genre");
-  const page = parseInt(c.req.query("page") || "1");
-  const data = await otakudesuService.getAnimeByGenre(genre, page);
-  return successResponse(c, data, startTime);
-});
-
-// Schedule
-app.get("/api/schedule", async (c) => {
-  const startTime = Date.now();
-  const schedule = await otakudesuService.getSchedule();
-  return successResponse(c, { schedule }, startTime);
-});
-
-// Search
-app.get("/api/search", async (c) => {
-  const startTime = Date.now();
-  const query = c.req.query("q") || "";
-  const anime = await otakudesuService.search(query);
-  return successResponse(c, { anime }, startTime);
-});
-
-// Resolve streaming (POST)
-app.post("/api/resolve-streaming", async (c) => {
-  const startTime = Date.now();
-  const body = await c.req.json();
-  const dataContent = body.dataContent;
-
-  if (!dataContent) {
-    const error = new Error("dataContent is required");
-    (error as any).statusCode = 400;
-    throw error;
-  }
-
-  const data = await otakudesuService.resolveStreamingUrl(dataContent);
-  return successResponse(c, data, startTime);
-});
-
-// Resolve streaming (GET)
-app.get("/api/resolve-streaming/:dataContent", async (c) => {
-  const startTime = Date.now();
-  const dataContent = c.req.param("dataContent");
-  const data = await otakudesuService.resolveStreamingUrl(dataContent);
-  return successResponse(c, data, startTime);
-});
+app.route("/api", otakudesuRoutes);
 
 export default app;
+export { otakudesuRoutes, openApiSpec as otakudesuOpenApiSpec };
