@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "otaku-hub",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-12-06",
+  "compatibility_flags": ["nodejs_compat"],
+  "dev": {
+    "port": 8780,
+    "inspector_port": 9320
+  }
+}

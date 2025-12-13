@@ -1,0 +1,24 @@
+{
+  "name": "@otaku-wrapper/hub",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+  },
+  "dependencies": {
+    "@api/kusonime": "workspace:*",
+    "@api/meio": "workspace:*",
+    "@api/otakudesu": "workspace:*",
+    "@api/softkomik": "workspace:*",
+    "@hono/swagger-ui": "^0.5.2",
+    "@otaku-wrapper/core": "workspace:*",
+    "hono": "^4.10.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.2",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.4.0"
+  }
+}
