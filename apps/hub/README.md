@@ -45,18 +45,23 @@ Or from `apps/hub` folder:
 pnpm deploy
 ```
 
-### Deploy via Dashboard (Manual)
+### Deploy via Dashboard (Git Integration)
 
-1. Build the worker locally:
-   ```bash
-   pnpm build
+1. Open [Cloudflare Dashboard](https://dash.cloudflare.com/) > Workers & Pages
+2. Click **Create** > **Import a repository**
+3. Connect your GitHub/GitLab and select the repository
+4. Configure build settings:
+   - **Root directory**: `/` (leave empty or root)
+   - **Build command**: (leave empty)
+   - **Deploy command**: `pnpm --filter @otaku-wrapper/hub deploy`
+5. Set **Build watch paths** to trigger rebuild on changes:
    ```
-2. Open [Cloudflare Dashboard](https://dash.cloudflare.com/) > Workers & Pages
-3. Click **Create** > **Create Worker**
-4. Name your worker (e.g., `otaku-hub`) and click **Deploy**
-5. Go to worker **Settings** > **Build** > **Edit Build Configuration**
-6. Set **Build command** to `pnpm install && pnpm build`
-7. Alternatively, use **Quick Edit** to paste the bundled code from `dist/` folder
+   apps/hub/**
+   apps/api/**
+   packages/core/**
+   pnpm-lock.yaml
+   ```
+6. Click **Save and Deploy**
 
 After successful deployment, the worker URL will be displayed:
 
