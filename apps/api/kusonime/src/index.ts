@@ -2,9 +2,9 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { swaggerUI } from "@hono/swagger-ui";
-import { successResponse, type ApiErrorResponse } from "@otaku-wrapper/core";
-import { kusonimeService } from "./services/kusonime.service";
+import { type ApiErrorResponse } from "@otaku-wrapper/core";
 import { openApiSpec } from "./openapi";
+import { kusonimeRoutes } from "./routes";
 
 const app = new Hono();
 
@@ -57,66 +57,7 @@ app.get("/", (c) => {
   return c.redirect("/docs");
 });
 
-app.get("/api/home", async (c) => {
-  const startTime = Date.now();
-  const data = await kusonimeService.getHome();
-  return successResponse(c, data, startTime);
-});
-
-app.get("/api/latest", async (c) => {
-  const startTime = Date.now();
-  const page = parseInt(c.req.query("page") || "1");
-  const data = await kusonimeService.getLatestAnime(page);
-  return successResponse(c, data, startTime);
-});
-
-app.get("/api/anime-list", async (c) => {
-  const startTime = Date.now();
-  const list = await kusonimeService.getAnimeList();
-  return successResponse(c, { list }, startTime);
-});
-
-app.get("/api/anime/:slug", async (c) => {
-  const startTime = Date.now();
-  const slug = c.req.param("slug");
-  const data = await kusonimeService.getAnimeDetail(slug);
-  return successResponse(c, data, startTime);
-});
-
-app.get("/api/genres", async (c) => {
-  const startTime = Date.now();
-  const genres = await kusonimeService.getGenres();
-  return successResponse(c, { genres }, startTime);
-});
-
-app.get("/api/genres/:genre", async (c) => {
-  const startTime = Date.now();
-  const genre = c.req.param("genre");
-  const page = parseInt(c.req.query("page") || "1");
-  const data = await kusonimeService.getAnimeByGenre(genre, page);
-  return successResponse(c, data, startTime);
-});
-
-app.get("/api/seasons", async (c) => {
-  const startTime = Date.now();
-  const seasons = await kusonimeService.getSeasons();
-  return successResponse(c, { seasons }, startTime);
-});
-
-app.get("/api/seasons/:season", async (c) => {
-  const startTime = Date.now();
-  const season = c.req.param("season");
-  const page = parseInt(c.req.query("page") || "1");
-  const data = await kusonimeService.getAnimeBySeason(season, page);
-  return successResponse(c, data, startTime);
-});
-
-app.get("/api/search", async (c) => {
-  const startTime = Date.now();
-  const query = c.req.query("q") || "";
-  const page = parseInt(c.req.query("page") || "1");
-  const data = await kusonimeService.search(query, page);
-  return successResponse(c, data, startTime);
-});
+app.route("/api", kusonimeRoutes);
 
 export default app;
+export { kusonimeRoutes, openApiSpec as kusonimeOpenApiSpec };
