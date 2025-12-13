@@ -31,7 +31,7 @@ npx wrangler login
 
 This will open a browser for authentication.
 
-### Deploy
+### Deploy via CLI
 
 From root project:
 
@@ -44,6 +44,19 @@ Or from `apps/hub` folder:
 ```bash
 pnpm deploy
 ```
+
+### Deploy via Dashboard (Manual)
+
+1. Build the worker locally:
+   ```bash
+   pnpm build
+   ```
+2. Open [Cloudflare Dashboard](https://dash.cloudflare.com/) > Workers & Pages
+3. Click **Create** > **Create Worker**
+4. Name your worker (e.g., `otaku-hub`) and click **Deploy**
+5. Go to worker **Settings** > **Build** > **Edit Build Configuration**
+6. Set **Build command** to `pnpm install && pnpm build`
+7. Alternatively, use **Quick Edit** to paste the bundled code from `dist/` folder
 
 After successful deployment, the worker URL will be displayed:
 
