@@ -9,10 +9,10 @@
   "dependencies": {
     "@hono/swagger-ui": "^0.5.2",
     "@otaku-wrapper/core": "workspace:*",
-    "hono": "^4.10.7"
+    "hono": "^4.11.0"
   },
   "devDependencies": {
-    "@types/node": "^24.10.2",
-    "wrangler": "^4.4.0"
+    "@types/node": "^24.10.3",
+    "wrangler": "^4.54.0"
   }
 }
