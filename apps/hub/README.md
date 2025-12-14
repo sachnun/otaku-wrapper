@@ -36,13 +36,13 @@ This will open a browser for authentication.
 From root project:
 
 ```bash
-pnpm --filter @otaku-wrapper/hub deploy
+pnpm --filter @otaku-wrapper/hub run deploy
 ```
 
 Or from `apps/hub` folder:
 
 ```bash
-pnpm deploy
+pnpm run deploy
 ```
 
 ### Deploy via Dashboard (Git Integration)
@@ -51,9 +51,9 @@ pnpm deploy
 2. Click **Create** > **Import a repository**
 3. Connect your GitHub/GitLab and select the repository
 4. Configure build settings:
-   - **Root directory**: `/` (leave empty or root)
+   - **Root directory**: (leave empty)
    - **Build command**: (leave empty)
-   - **Deploy command**: `pnpm --filter @otaku-wrapper/hub deploy`
+   - **Deploy command**: `pnpm --filter @otaku-wrapper/hub run deploy`
 5. Set **Build watch paths** to trigger rebuild on changes:
    ```
    apps/hub/**
