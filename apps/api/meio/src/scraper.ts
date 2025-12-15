@@ -174,7 +174,10 @@ export async function getChapterList(slug: string): Promise<Chapter[]> {
 	if (cached) return cached
 
 	const url = `${BASE_URL}/novel/${slug}/ajax/chapters/`
-	const html = await fetchText(url, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } })
+	const html = await fetchText(url, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+	})
 	const $ = cheerio.load(html)
 
 	const chapters: Chapter[] = []

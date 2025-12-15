@@ -11,6 +11,8 @@ export const DEFAULT_HEADERS: HeadersInit = {
 export interface FetchOptions {
   headers?: HeadersInit;
   referer?: string;
+  method?: "GET" | "POST";
+  body?: string;
 }
 
 export async function fetchHtml(
@@ -49,7 +51,11 @@ export async function fetchText(
     (headers as Record<string, string>)["Referer"] = options.referer;
   }
 
-  const response = await fetch(url, { headers });
+  const response = await fetch(url, {
+    method: options?.method || "GET",
+    headers,
+    body: options?.body,
+  });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.status}`);
